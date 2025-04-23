@@ -1,0 +1,104 @@
+---
+title: "pertemuan 11 PDS"
+output:
+  pdf_document: default
+  html_document: default
+date: "2025-04-23"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 1. Data & Preview Data
+memuat dataset airquality yang tersedia secara default di R. Dataset ini berisi informasi mengenai kualitas udara harian di New York pada tahun 1973, termasuk variabel seperti Ozone, Solar.R, Wind, Temp, dan Month. dan dilakukan peninjauan awal data untuk memahami struktur dan isi dataset. Di sini saya memilih Ozone sebagai variabel dependen (Y) dan Temp sebagai variabel independen (X). 
+
+Model regresi yang akan dibentuk adalah:
+Ozone∼Temp
+```{r}
+data("airquality")
+
+#Preview Data
+head(airquality)
+summary(airquality)
+str(airquality)
+```
+
+# 2. Heatmap Korelasi Data
+Visualisasi hubungan antar variabel numerik melalui heatmap korelasi. Korelasi positif antara Temp dan Ozone akan memperkuat alasan pemilihan model.
+```{r}
+library(corrplot)
+aq_clean <- na.omit(airquality)
+cor_matrix <- cor(aq_clean)
+
+corrplot(cor_matrix, method = "color", type = "upper", tl.col = "black")
+model <- lm(Wind ~ Temp, data = airquality)
+residuals <- residuals(model)
+```
+# 3. Uji Asumsi Normalitas
+Uji Shapiro-Wilk digunakan untuk memeriksa apakah residual berdistribusi normal. Visualisasi melalui Q-Q plot membantu mendeteksi penyimpangan dari distribusi normal.
+```{r}
+model <- lm(Ozone ~ Temp, data = aq_clean)
+residuals <- residuals(model)
+
+shapiro.test(residuals)  # H0: residual normal
+
+qqnorm(residuals)
+qqline(residuals, col = "red")
+```
+
+
+# 4. Uji Asumsi Heteroskedastisitas
+Uji Breusch-Pagan digunakan untuk mendeteksi adanya heteroskedastisitas, yaitu kondisi di mana varians residual tidak konstan. Nilai p yang besar (p > 0.05) menandakan tidak ada heteroskedastisitas.
+```{r}
+library(lmtest)
+bptest(model)
+```
+
+#Uji Asumsi Multikorelineritas
+Dalam regresi linear sederhana (satu prediktor), uji ini tidak diperlukan. Namun, jika ditambahkan lebih dari satu prediktor, maka Variance Inflation Factor (VIF) digunakan untuk mendeteksi multikolinieritas antar prediktor.
+```{r}
+model2 <- lm(Ozone ~ Temp + Wind, data = aq_clean)
+library(car)
+vif(model2)
+```
+
+# 5. Uji Asumsi Autokorelasi
+Uji Durbin-Watson digunakan untuk memeriksa autokorelasi pada residual. Nilai mendekati 2 menandakan tidak adanya autokorelasi, yang penting untuk keandalan model regresi.
+```{r}
+dwtest(model)
+```
+
+
+# 6.Pemodelan Regresi
+Output dari fungsi summary() menyajikan estimasi koefisien regresi, nilai R-squared, nilai F-statistik, serta signifikansi model. Koefisien regresi akan digunakan untuk membentuk persamaan regresi.
+```{r}
+summary(model)
+```
+# 7. R-square
+Nilai Multiple R-squared menunjukkan proporsi variasi dalam Ozone yang dapat dijelaskan oleh suhu (Temp). Nilai R-square 0.48 berarti 48% variasi dalam kadar Ozone dijelaskan oleh suhu.
+```{r}
+df <- na.omit(airquality)
+
+y_actual <- df$Ozone
+y_pred <- predict(model)
+
+SSres <- sum((y_actual - y_pred)^2)
+SStot <- sum((y_actual - mean(y_actual))^2)
+
+R_squared_manual <- 1 - (SSres / SStot)
+
+print(paste("R-squared (manual):", round(R_squared_manual, 4)))
+
+```
+
+# 8. Interpretasi Data
+persamaan regresi:
+
+y =−147.6461+2.4391x
+
+Intercept (-147.6461): Bila suhu = 0°F (nilai ekstrem dan teoritis), prediksi Ozone adalah -147.6461 (tidak realistis, tapi secara matematis diperlukan).
+
+Koefisien Temp (2.4391): Setiap kenaikan 1°F suhu, kadar Ozone meningkat rata-rata sebesar 2.4391 unit.
+
+R-squared 0.48: Sekitar 48% variasi Ozone dapat dijelaskan oleh suhu.
